@@ -49,36 +49,40 @@ class PCA95XX(object):
         elif value == 1:
             return bitmap | (1 << bit)
 
-    def _readandchangepin(self, port, pin, value, currvalue = None):
+    # Change the value of bit PIN on port PORT to VALUE.  If the
+    # current pin state for the port is passed in as PORTSTATE, we
+    # will avoid doing a read to get it.  The port pin state must be
+    # complete if passed in (IE it should not just be the value of the
+    # single pin we are trying to change)
+    def _readandchangepin(self, port, pin, value, portstate = None):
         assert pin >= 0 and pin < self.num_gpios, "Pin number %s is invalid, only 0-%s are valid" % (pin, self.num_gpios)
-        assert self.direction & (1 << pin) == 0, "Pin %s not set to output" % pin
-        if not currvalue:
+        if not portstate:
           if self.num_gpios <= 8:
-             currvalue = self.bus.read_byte_data(self.address, port)
+             portstate = self.bus.read_byte_data(self.address, port)
           elif self.num_gpios > 8 and self.num_gpios <= 16:
-             currvalue = self.bus.read_word_data(self.address, port << 1)
-        newvalue = self._changebit(currvalue, pin, value)
+             portstate = self.bus.read_word_data(self.address, port << 1)
+        newstate = self._changebit(portstate, pin, value)
         if self.num_gpios <= 8:
-            self.bus.write_byte_data(self.address, port, newvalue)
+            self.bus.write_byte_data(self.address, port, newstate)
         else:
-            self.bus.write_word_data(self.address, port << 1, newvalue)
-        return newvalue
+            self.bus.write_word_data(self.address, port << 1, newstate)
+        return newstate
 
+    # Polarity inversion
     def polarity(self, pin, value):
         return self._readandchangepin(POLARITY_PORT, pin, value)
 
-    # Set pin to either input or output mode
+    # Pin direction
     def config(self, pin, mode):        
         self.direction = self._readandchangepin(CONFIG_PORT, pin, mode, self.direction)
         return self.direction
-
+    
     def output(self, pin, value):
         assert self.direction & (1 << pin) == 0, "Pin %s not set to output" % pin
         self.outputvalue = self._readandchangepin(OUTPUT_PORT, pin, value, self.outputvalue)
         return self.outputvalue
         
     def input(self, pin):
-        assert pin >= 0 and pin < self.num_gpios, "Pin number %s is invalid, only 0-%s are valid" % (pin, self.num_gpios)
         assert self.direction & (1 << pin) != 0, "Pin %s not set to input" % pin
         if self.num_gpios <= 8:
             value = self.bus.read_byte_data(self.address, INPUT_PORT)
@@ -88,7 +92,9 @@ class PCA95XX(object):
 
         
 
-# RPi.GPIO compatible interface for PCA95XX
+# RPi.GPIO compatible interface for PCA95XX You can pass this class
+# along to anything that expects an RPi.GPIO module and it should work
+# fine.
 
 class PCA95XX_GPIO(object):
     OUT = 0
