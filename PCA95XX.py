@@ -52,7 +52,7 @@ class PCA95XX(object):
     def _readandchangepin(self, port, pin, value, currvalue = None):
         assert pin >= 0 and pin < self.num_gpios, "Pin number %s is invalid, only 0-%s are valid" % (pin, self.num_gpios)
         assert self.direction & (1 << pin) == 0, "Pin %s not set to output" % pin
-	if not currvalue:
+        if not currvalue:
           if self.num_gpios <= 8:
              currvalue = self.bus.read_byte_data(self.address, port)
           elif self.num_gpios > 8 and self.num_gpios <= 16:
@@ -68,21 +68,14 @@ class PCA95XX(object):
         return self._readandchangepin(POLARITY_PORT, pin, value)
 
     # Set pin to either input or output mode
-    def config(self, pin, mode):
-        assert pin >= 0 and pin < self.num_gpios, "Pin number %s is invalid, only 0-%s are valid" % (pin, self.num_gpios)
-        newdirection = self._changebit(self.direction, pin, mode)
-        if self.num_gpios <= 8:
-            self.bus.write_byte_data(self.address, CONFIG_PORT, newdirection)
-        elif self.num_gpios > 8 and self.num_gpios <= 16:
-            self.bus.write_word_data(self.address, CONFIG_PORT << 1, newdirection)
-        self.direction = newdirection
+    def config(self, pin, mode):        
+        self.direction = self._readandchangepin(CONFIG_PORT, pin, mode, self.direction)
         return self.direction
 
     def output(self, pin, value):
-        assert pin >= 0 and pin < self.num_gpios, "Pin number %s is invalid, only 0-%s are valid" % (pin, self.num_gpios)
         assert self.direction & (1 << pin) == 0, "Pin %s not set to output" % pin
-	self.outputvalue = self._readandchangepin(OUTPUT_PORT, pin, value, self.outputvalue)
-	return self.outputvalue
+        self.outputvalue = self._readandchangepin(OUTPUT_PORT, pin, value, self.outputvalue)
+        return self.outputvalue
         
     def input(self, pin):
         assert pin >= 0 and pin < self.num_gpios, "Pin number %s is invalid, only 0-%s are valid" % (pin, self.num_gpios)
