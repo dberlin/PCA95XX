@@ -20,8 +20,8 @@
 
 import smbus
 
-# For the PCA 953X and 955X series, the 8 GPIO chips have these port numbers
-# The 16 GPIO chips have the first port for each type at double these numbers
+# For the PCA 953X and 955X series, the chips with 8 GPIO's have these port numbers
+# The chips with 16 GPIO's have the first port for each type at double these numbers
 # IE The first config port is 6
 INPUT_PORT = 0
 OUTPUT_PORT = 1
